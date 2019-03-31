@@ -2,11 +2,17 @@
 
 #### A react-based library for managing complex animations
 
+<img src="https://user-images.githubusercontent.com/46129036/55287638-5235ff80-53b4-11e9-8a78-09523622aadf.gif"/>
+
+---
+
 `state = (oldState, action) => newState`
 
 but
 
 `animation = (time) => frame` 
+
+---
 
 React Animation Orchestrator is a library that solves the problem of discrepancy between the fact that state changes are nearly instantaneous but animations, by definition, take time to complete.
     
@@ -15,14 +21,24 @@ React Animation Orchestrator is a library that solves the problem of discrepancy
  Based on the timeline feature of the incredible [GSAP](https://greensock.com/gsap) animation library it offers:
     
 
- * multiple
- * Static/Dynamic Animations
+ * Different modes of resolving conflicting animations (queueing or fast-forwarding animations)
+ * Support for Static/Dynamic Animations
+ * Triggering animations from a state change or from user-initiated events (mouse click, scroll etc)
+ * Taking care of annoying edge cases, like how components shouldn't be removed from the DOM until they've performed their requested animations.
  
- See a live demo [live!]()
+ See a live demo [live!](https://codesandbox.io/s/github/ekolabs/fancy-multi-select)
 
-React Animation Orchestrator can ensures that animations will run sequentially. It also takes care of many annoying edge cases:
- 
- * components shouldn't be removed from the DOM until they've performed their required animations.
+---
+
+## Overview
+
+React Animation Orchestrator is used in two major steps: Defining animations and Describing scenarios that decide when to run these animations.
+
+1. First, a user <a href="#attachAnimation">decorates</a> a React component to become an `AnimatedComponent`. An `AnimatedComponent` can use its `registerAnimation` function to register animation specific to the component domain, to be later used within a scenario.
+
+2. An `AnimatedComponent` is configured with a set of <a href="#ScenarioConfiguration">Scenarios</a> with the <a href="#attachAnimation">`attachAnimation`</a> function, to act as a *"controller"* of sorts to its domain-specific animations. Once the props of an `AnimatedComponent` change, all <a href="#TriggerConfiguration">triggers</a> in all of its scenarios are evaluated. If one of the triggers is evaluated to be triggered, the animations associated with the scenario the trigger belongs to are added to a timeline.
+
+Woah that was a mouthful - in practice this should be much clearer:
 
 ## Usage example
 
@@ -30,33 +46,168 @@ React Animation Orchestrator can ensures that animations will run sequentially. 
 npm install @ekolabs/react-animation-orchestrator
 ```
 
+Defining and registering animation for a component:
 
+```js
+import React from "react";
+import { TimelineMax } from 'gsap';
+import { attachAnimation } from "@ekolabs/react-animation-orchestrator";
 
-## Overview
+// an example of an animation generator function
+const lookAtMeAnimation = (ref, options) => {
+    let tl = new TimelineMax();   
+    let myEl = ref.current;
+    
+    tl.to(myEl, 0.5, {
+            scale: 1.5,
+            rotating: '45deg',
+            transformOrigin: 'center',
+            opacity: 0.7,          
+        })
+        .to(myEl, 0.2, {
+            scale: 1,
+            rotating: '0deg',
+            transformOrigin: 'center',
+            opacity: 1,   
+        });
 
-React Animation Orchestrator has to major parts: Defining animations and Describing scenarios of when to run these animations.
+    return tl;
+};
 
-First, a user <a href="#attachAnimation">decorates</a> a component to become an `AnimatedComponent`. An AnimatedComponent can use its `registerAnimation` function to register animation specific to the component domain, to be later used within a scenario.
+class FancyComponent extends React.Component {
+    constructor(props){
+        super(props);
+        this.ref = React.createRef();
+        this.props.registerAnimation('lookAtMe', lookAtMeAnimation, this.ref);       
+    }
+    
 
-An `AnimatedComponent` can also be configured with a set of <a href="#ScenarioConfiguration">Scenarios</a> with the <a href="#attachAnimation">`attachAnimation`</a> function, to act as a *"controller"* of sorts to its domain-specific animations. Once the props of an AnimatedComponent change, all <a href="#TriggerConfiguration">triggers</a> in all of its scenarios are evaluated. If one of the triggers is evaluated to be triggered, the configured animation associated with the scenario the trigger belongs to are added to a timeline.
+    render(){
+        return (
+            <div ref={this.ref}>Attention-grabbing element</div>
+        )
+    }
+}
+
+export default attachAnimation(FancyComponent);
+
+```
+
+Configuring scenarios to trigger animations
+
+```js
+import React from "react";
+import { attachAnimation } from "@ekolabs/react-animation-orchestrator";
+import FancyComponent from "./FancyComponent";
+
+class PageComponent extends React.Component {
+  
+    render(){
+        return (
+            <div>
+                <FancyComponent/>
+                <AnotherComponent />
+                <MoreComponents />
+            </div>
+        )
+    }
+}
+
+export default attachAnimation(PageComponent, [
+    // when the grabAttention prop changes from false to true, 
+    // we want to queue the lookAtMe animation
+    {
+        id: 'someChange',
+        trigger: {          
+             select: props => props.grabAttention,
+             value: false,
+             nextValue: true
+        },
+        animations: 'lookAtMe'
+    }
+]);
+
+```
+
   
 
 ## API
 
-<a id="attachAnimation" >
+<a id="registerAnimation" />
 
-**attachAnimation(WrappedComponent, [scenariosConfig])**
+**registerAnimation(animationId, animationGeneratorFunction, elementReference)**
+
+Registers a new animation for an AnimatedComponent. This method is a available in the props of an attached component.
+
+| Parameter| Type | Value           |
+| ------------- |----- |--------| 
+animationId string | A unique id for this animation
+| animationGeneratorFunction| <a href="#AnimationGenerator">AnimationGenrator</a> | The animation generator function for this reference
+| elementReference | React reference | A React reference for the DOM object being animated
+
+
+```js
+// example
+class FancyComponent extends React.Component {
+    constructor(props){
+        super(props);
+        this.ref = React.createRef();
+        this.props.registerAnimation('lookAtMe', lookAtMeAnimation, this.ref);       
+    }
+    
+
+    render(){
+        return (
+            <div ref={this.ref}>Attention-grabbing element</div>
+        )
+    }
+}
+
+```
+
+<a id="attachAnimation" />
+
+**attachAnimation(WrappedComponent, scenariosConfig)**
+
+Creates a higher-order component `AnimatedComponent` based on the supplied component, along with its scenario configurations.
 
 | Parameter| Type | Value           |
 | ------------- |----- |--------| 
 WrappedComponent | React.Component | A react component class (not an instance) |
-| scenariosConfig| <a href="ScenarioConfiguration">Scenario Configuration</a> | An array of scenario configurations to be managed by this component (optional)|
+| scenariosConfig| <a href="#ScenarioConfiguration">Scenario Configuration</a> | An array of scenario configurations to be managed by this component (optional)|
 
-**addAnimation**
+**addAnimation(animations, timelineOrTimelineId, options)**
 
-**triggerScenario**
+Manually add animations to a timeline
 
-**setGlobalOptions**
+| Parameter| Type | Value           |
+| ------------- |----- |--------| 
+animations | An array of <a href="#AnimationConfiguration">AnimationConfiguration</a> | The animations to run
+| timelineOrTimelineId | A timeline id or a timeline instance | The timeline to add the animations to. If a timeline with such id does not exist, a new timeline will be created.
+options | object | The options will be passed as the second parameter of the <a href="#AnimationGenerator">animation generator function</a> 
+
+**triggerScenario(scenarioId)**
+
+Manually triggers the scenario's animations
+
+| Parameter| Type | Value           |
+| ------------- |----- |--------| 
+scenarioId | string | The id of the scenario to trigger 
+
+**setGlobalOptions(options)**
+
+Sets global options for React Animation Orchestrator.
+Options are:
+
+```js
+// example
+{
+    onScenarioTriggered: (matchedScenario) => {},
+    onScenarioStart: (refs, scenarioConfig, triggerConfig) => {},
+    onScenarioComplete: (refs, scenarioConfig, triggerConfig) => {}
+}
+
+```
 
 
 ##Configuration
@@ -100,10 +251,10 @@ When testing the trigger, the `select` function will be executed with the props 
 This allows more custom logic of props comparison to determine how to evaluate the trigger.
 
 ```js
-    // example
-    (triggerComponent, prevProps, nextProps) => {   
-                nextProps.VarToCheck === prevProps.varToCheck + 1;                
-            },
+// example
+(triggerComponent, prevProps, nextProps) => {   
+            nextProps.VarToCheck === prevProps.varToCheck + 1;                
+        },
 ```
 
 Trigger function Parameters:
@@ -125,24 +276,23 @@ Can be either a string, an object, a function or an array containing these types
 
 ***As a string***
 
-```'fadeIn```
+```'fadeIn'```
 
 ***As an Object***
 ```js
+// example
 {
  animation: 'fadeIn',
  position: 'withPrev',
  immediate: false,
- onComplete: ()=>{}
+ onComplete: ()=>{ console.log()}
 }
 
 ```
 
-Possible properties are:
-
 | Property| Type | Value |
 | --- | --- | --- |  
-| Animation | string | The animation ID |
+| animation | string | The animation ID |
 | timeline | string  | The id of timeline to insert the animation. If not specified the default master timeline is used.
 | position | string / number / 'withPrev' | Where in the timeline to place the animation. Maps to GSAP position paramater, See [documentation](https://greensock.com/docs/TimelineMax/add). Also accepts a special `withPrev` value that places this animation at the start time of the previous animation in the timeline.
 | immediate | boolean | if true, animation will completely instantly (duration ~0)
@@ -156,13 +306,14 @@ The animation configuration function will be evaluated when a trigger condition 
 Must return an object or a string (as described above)
 
 ```js 
-    animatedComponentInstance => {
-                     animation: 'fadeIn',
-                     position: '+=2',
-                     animationsOptions" {
-                        myVar: 12
-                     }
+// example
+animatedComponentInstance => {
+                 animation: 'fadeIn',
+                 position: '+=2',
+                 animationsOptions" {
+                    myVar: 12
                  }
+             }
 
 ```
 
@@ -190,8 +341,52 @@ attachAnimation(WrappedComponent, [
     ])
 ```
 
+###<span id="AnimationCallback">Animation Callback Function</span>
+
+The function that gets executed once when `onStart` or `onComplete` is defined for an animation.
+
+| Property| Type | Value |
+| --- | --- | --- |  
+| references.animatedComponent | AnimatedComponent | A reference to the component being animated
+| references.triggerComponent | AnimatedComponent | A reference to the component that triggered the scenario (will be `null` if animation was triggered manually via `addAnimation`)
+| references.tween | Tween | A reference to GSAP tween object
+
+```js
+// example
+(refs) => {}
+```   
+
+###<span id="AnimationGenerator">Animation Generator Function</span>
+
+A function that generates a sub-timeline that describes the animation.
+Returns a [GSAP timeline](https://greensock.com/docs/TimelineMax) 
+
+| Property| Type | Value |
+| --- | --- | --- |  
+| ref | React reference | The element reference passsed in <a href="#registerAnimation">`registerAnimation`</a> |
+| options | object  | The value of animationOptions as configured in an <a href="#AnimationConfiguration">AnimationConfiguration</a> (optional)
+
+```js
+// example
+(ref, options) => {
+    let tl = new TimelineMax();   
+    let myEl = ref.current;
+    
+    tl.to(myEl, 0.5, {
+            scale: 1.5,
+            rotating: '45deg',
+            transformOrigin: 'center',
+            opacity: 0.7,          
+        });       
+
+    return tl;
+};
+
+``` 
 
 ## Contributing
+
+When contributing to this repository, please first discuss the change you wish to make via issue, email, or any other method before submitting a PR.
 
 ## Authors
 
