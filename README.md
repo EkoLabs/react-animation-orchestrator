@@ -310,7 +310,7 @@ Must return an object or a string (as described above)
 animatedComponentInstance => {
                  animation: 'fadeIn',
                  position: '+=2',
-                 animationsOptions" {
+                 animationsOptions: {
                     myVar: 12
                  }
              }
