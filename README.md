@@ -26,7 +26,7 @@ React Animation Orchestrator is a library that solves the problem of discrepancy
  * Triggering animations from a state change or from user-initiated events (mouse click, scroll etc)
  * Taking care of annoying edge cases, like how components shouldn't be removed from the DOM until they've performed their requested animations.
  
- See a live demo [live!](https://codesandbox.io/s/github/ekolabs/fancy-multi-select)
+ See a live demo [live!](https://codesandbox.io/s/github/ekolabs/react-fancy-multi-select)
 
 ---
 
