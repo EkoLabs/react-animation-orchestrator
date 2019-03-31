@@ -226,15 +226,12 @@ Can either be an object or a function
 When testing the trigger, the `select` function will be executed with the props as its parameter once on the previous props and once on the next (changed) props. If the result of the previous props selection is equal to `value` and the next props selection is equal to `nextValue` the trigger is considered, well, triggered.
 
 ```js
+// example
 {
-    // example
-    {
-        select: props => props.varToCheck,
-        value: 'oldValue',
-        nextValue: 'newValue'
-    }
+    select: props => props.varToCheck,
+    value: 'oldValue',
+    nextValue: 'newValue'
 }
-
 ```
 
 ***As a function***
@@ -271,12 +268,11 @@ Can either be a string, an object, a function or an array containing these types
 ```js
 // example
 {
- animation: 'fadeIn',
- position: 'withPrev',
- immediate: false,
- onComplete: ()=>{ console.log()}
+    animation: 'fadeIn',
+    position: 'withPrev',
+    immediate: false,
+    onComplete: () => { console.log(); }
 }
-
 ```
 
 | Property| Type | Value |
@@ -326,7 +322,7 @@ attachAnimation(WrappedComponent, [
         animations: ...
     },
     ...
-    ])
+]);
 ```
 
 ### <a name="AnimationCallback"></a> Animation Callback Function
