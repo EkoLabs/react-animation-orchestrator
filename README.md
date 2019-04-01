@@ -1,4 +1,6 @@
-# React Animation Orchestrator
+<img src="https://user-images.githubusercontent.com/3951311/55326473-87178480-5490-11e9-98e3-fd12c546cd90.png" alt="React Animation Orchestrator Logo">
+
+## React Animation Orchestrator
 
 #### A react-based library for managing complex animations
 
