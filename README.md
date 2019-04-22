@@ -8,6 +8,12 @@
 
 ---
 
+See Opher's talk from YGLF 2019:
+#### [Managing animations (sanely) in (insanely) complex apps](https://www.youtube.com/watch?v=NqClaDilv90)
+[![Managing animations (sanely) in (insanely) complex apps](https://user-images.githubusercontent.com/3951311/56507838-478e0680-652b-11e9-92b5-72a02c6d0b1b.png)](https://www.youtube.com/watch?v=NqClaDilv90)
+
+---
+
 `state = (oldState, action) => newState`
 
 but
